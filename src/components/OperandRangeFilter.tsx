@@ -3,7 +3,7 @@ import { Button, Form } from 'react-bootstrap'
 import { OPERAND_COUNT_MAX, OPERAND_COUNT_MIN, OperandRange } from '../modules/riscvCommandsApi'
 
 interface Props {
-  // Применённый диапазон из URL страницы плитки
+  // Примененный диапазон из URL страницы плитки
   range: OperandRange
   onSubmit: (range: OperandRange) => void
 }
@@ -14,7 +14,7 @@ const rangePercent = (count: number) => (count * 100) / OPERAND_COUNT_MAX
 
 // Фильтр плитки по количеству операндов: двойной ползунок 0–3 и кнопка «Показать»
 export const OperandRangeFilter: FC<Props> = ({ range, onSubmit }) => {
-  // Выбранные, но ещё не применённые границы; применяются по кнопке
+  // Выбранные, но еще не применённые границы; применяются по кнопке
   const [minimum, setMinimum] = useState(range.min_operands)
   const [maximum, setMaximum] = useState(range.max_operands)
 
