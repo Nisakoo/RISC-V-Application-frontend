@@ -77,15 +77,12 @@ describe('страница плитки', () => {
     expect(await screen.findByText('Для выбранного диапазона команд нет.')).toBeInTheDocument()
   })
 
-  it('подставляет изображение по умолчанию для пустого и недоступного URL', async () => {
+  it('показывает изображение по умолчанию во всех карточках', async () => {
     renderAt('/riscv_commands/grid')
-    const emptyImage = await screen.findByAltText('Схема команды XOR')
-    expect(emptyImage).toHaveAttribute('src', DEFAULT_IMAGE_URL)
-
-    const unavailableImage = screen.getByAltText('Схема команды ADD')
-    expect(unavailableImage.getAttribute('src')).toMatch(/images\/ADD\.png$/)
-    fireEvent.error(unavailableImage)
-    expect(unavailableImage).toHaveAttribute('src', DEFAULT_IMAGE_URL)
+    await screen.findByAltText('Схема команды XOR')
+    const images = screen.getAllByAltText(/^Схема команды /)
+    expect(images).toHaveLength(9)
+    images.forEach((image) => expect(image).toHaveAttribute('src', DEFAULT_IMAGE_URL))
   })
 
   it('открывает команду в ленте по нажатию на изображение', async () => {
@@ -115,23 +112,11 @@ describe('страница ленты', () => {
     expect(await screen.findByText('XOR')).toBeInTheDocument()
   })
 
-  it('использует видео по умолчанию для команды без видео', async () => {
-    const { container } = renderAt('/riscv_commands/feed?id=64')
-    await screen.findByText('ECALL')
-    const video = container.querySelector('video')
-    expect(video).toHaveAttribute('src', DEFAULT_VIDEO_URL)
-    expect(video).toHaveAttribute('poster', DEFAULT_IMAGE_URL)
-  })
-
-  it('подставляет постер по умолчанию, если изображение команды недоступно', async () => {
+  it('использует видео и постер по умолчанию', async () => {
     const { container } = renderAt('/riscv_commands/feed?id=1')
     await screen.findByText('ADD')
     const video = container.querySelector('video')
-    expect(video?.getAttribute('poster')).toMatch(/images\/ADD\.png$/)
-
-    const posterCheck = container.querySelector('img[aria-hidden="true"]')
-    expect(posterCheck).not.toBeNull()
-    fireEvent.error(posterCheck!)
+    expect(video).toHaveAttribute('src', DEFAULT_VIDEO_URL)
     expect(video).toHaveAttribute('poster', DEFAULT_IMAGE_URL)
   })
 

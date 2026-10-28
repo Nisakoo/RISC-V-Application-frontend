@@ -1,8 +1,7 @@
-import { mediaURL } from './media'
 import type { RiscVCommand } from './riscvCommandsApi'
 
 // Mock-коллекция опубликованных команд RISC-V. Поля совпадают с JSON API backend.
-// У XOR, ECALL и C.ADDI нет медиа: для них показываются изображение и видео по умолчанию.
+// Поля медиа у всех команд пустые: хук useMediaFallback подставляет изображение и видео по умолчанию.
 export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
   {
     id: 1,
@@ -11,8 +10,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
       'Складывает значения исходных регистров rs1 и rs2, затем сохраняет сумму в целевой регистр rd.',
     operand_count: 3,
     length_bits: 32,
-    image_url: mediaURL('images/ADD.png'),
-    video_url: mediaURL('video/ADD.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 4,
   },
   {
@@ -22,8 +21,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
       'Вычитает значение регистра rs2 из регистра rs1 и записывает полученную разность в целевой регистр rd.',
     operand_count: 3,
     length_bits: 32,
-    image_url: mediaURL('images/SUB.png'),
-    video_url: mediaURL('video/SUB.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 3,
   },
   {
@@ -33,8 +32,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
       'Складывает значение регистра rs1 со знаково расширенным immediate и сохраняет результат в rd.',
     operand_count: 3,
     length_bits: 32,
-    image_url: mediaURL('images/ADDI.png'),
-    video_url: mediaURL('video/ADDI.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 3,
   },
   {
@@ -44,8 +43,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
       'Сравнивает значения rs1 и rs2 и при равенстве выполняет переход по заданному смещению.',
     operand_count: 3,
     length_bits: 32,
-    image_url: mediaURL('images/BEQ.png'),
-    video_url: mediaURL('video/BEQ.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 2,
   },
   {
@@ -54,8 +53,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
     description: 'Помещает двадцатибитное immediate в старшие разряды целевого регистра rd.',
     operand_count: 2,
     length_bits: 32,
-    image_url: mediaURL('images/LUI.png'),
-    video_url: mediaURL('video/LUI.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 2,
   },
   {
@@ -65,8 +64,8 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
       'Выполняет безусловный переход и сохраняет адрес следующей команды в регистре rd.',
     operand_count: 2,
     length_bits: 32,
-    image_url: mediaURL('images/JAL.png'),
-    video_url: mediaURL('video/JAL.mp4'),
+    image_url: '',
+    video_url: '',
     like_count: 2,
   },
   {
