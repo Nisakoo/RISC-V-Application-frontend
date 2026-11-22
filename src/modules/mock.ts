@@ -1,4 +1,9 @@
-import type { RiscVCommand } from './riscvCommandsApi'
+import {
+  RiscVCommand,
+  RiscVCommandFeed,
+  RiscVCommandListItem,
+  OperandRange,
+} from './riscvCommand'
 
 // Mock-коллекция опубликованных команд RISC-V. Поля совпадают с JSON API backend.
 // Поля медиа у всех команд пустые: хук useMediaFallback подставляет изображение и видео по умолчанию.
@@ -102,3 +107,34 @@ export const RISCV_COMMANDS_MOCK: RiscVCommand[] = [
     like_count: 1,
   },
 ]
+
+// Mock-аналог GET /api/riscv_commands: фильтрация по количеству операндов
+export const filterMockCommands = ({
+  min_operands,
+  max_operands,
+}: OperandRange): RiscVCommandListItem[] =>
+  RISCV_COMMANDS_MOCK.filter(
+    (command) => command.operand_count >= min_operands && command.operand_count <= max_operands,
+  ).map((command) => ({ ...command, is_creator: 0 }))
+
+// Mock-аналог GET /api/riscv_commands/feed: команда и id следующей по порядку
+export const getMockCommandFeed = (id: number | null): RiscVCommandFeed => {
+  const commands = [...RISCV_COMMANDS_MOCK].sort((left, right) => left.id - right.id)
+  if (commands.length === 0) {
+    throw new Error('В ленте пока нет доступных команд.')
+  }
+
+  let index = 0
+  if (id !== null) {
+    index = commands.findIndex((command) => command.id === id)
+    if (index === -1) {
+      throw new Error('Команда не найдена.')
+    }
+  }
+
+  return {
+    riscv_command: commands[index],
+    next_id: commands[(index + 1) % commands.length].id,
+    is_liked: 0,
+  }
+}

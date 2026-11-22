@@ -1,6 +1,6 @@
 import { CSSProperties, FC, FormEvent, useState } from 'react'
 import { Button, Form } from 'react-bootstrap'
-import { OPERAND_COUNT_MAX, OPERAND_COUNT_MIN, OperandRange } from '../modules/riscvCommandsApi'
+import { OPERAND_COUNT_MAX, OPERAND_COUNT_MIN, OperandRange } from '../modules/riscvCommand'
 
 interface Props {
   // Примененный диапазон из URL страницы плитки

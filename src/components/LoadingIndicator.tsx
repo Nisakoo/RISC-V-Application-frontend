@@ -2,7 +2,7 @@ import { FC } from 'react'
 import { Spinner } from 'react-bootstrap'
 
 interface Props {
-  // Поверх страницы (лента) или в потоке страницы (плитка)
+  // Поверх всего экрана с блокировкой нажатий или в потоке страницы
   overlay?: boolean
 }
 

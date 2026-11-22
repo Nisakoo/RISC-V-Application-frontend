@@ -1,48 +1,40 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { LoadingIndicator } from '../components/LoadingIndicator'
+
 import { OperandRangeFilter } from '../components/OperandRangeFilter'
 import { RiscVCommandCard } from '../components/RiscVCommandCard'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import {
-  OperandRange,
-  RiscVCommand,
-  getRiscVCommands,
-  parseOperandRange,
-} from '../modules/riscvCommandsApi'
+import { useAppDispatch, useAppSelector } from '../hooks/store'
+import { parseOperandRange } from '../modules/riscvCommand'
+import { deleteCommand, fetchCommands, setFilters } from '../slices/riscvCommandsSlice'
 
 // Страница плитки: /riscv_commands/grid?min_operands=<0–3>&max_operands=<0–3>
 export const RiscVCommandsGridPage: FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  // Фильтр хранится в URL, поэтому сохраняется при обновлении страницы и переходе назад
-  const { min_operands, max_operands } = parseOperandRange(searchParams)
-  const [riscvCommands, setRiscVCommands] = useState<RiscVCommand[]>()
-  const [errorMessage, setErrorMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-
   useDocumentTitle('Команды · RISC-V')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const dispatch = useAppDispatch()
+  const { min_operands, max_operands } = parseOperandRange(searchParams)
 
+  const { commands, listLoading, listError, deletingId } = useAppSelector(
+    (state) => state.riscvCommands,
+  )
+  const isAuthenticated = useAppSelector((state) => state.user.isAuthenticated)
+
+  // Фильтр хранится в Redux, а URL сохраняет его при обновлении страницы и переходе назад
   useEffect(() => {
-    let isActual = true
-    setIsLoading(true)
-    getRiscVCommands({ min_operands, max_operands })
-      .then((commands) => {
-        if (!isActual) return
-        setRiscVCommands(commands)
-        setErrorMessage('')
-      })
-      .catch(() => isActual && setErrorMessage('Не удалось загрузить команды.'))
-      .finally(() => isActual && setIsLoading(false))
-    return () => {
-      isActual = false
-    }
-  }, [min_operands, max_operands])
+    dispatch(setFilters({ min_operands, max_operands }))
+    dispatch(fetchCommands())
+  }, [dispatch, min_operands, max_operands, isAuthenticated])
 
-  const handleFilterSubmit = (range: OperandRange) => {
+  const handleFilterSubmit = (range: { min_operands: number; max_operands: number }) => {
     setSearchParams({
       min_operands: String(range.min_operands),
       max_operands: String(range.max_operands),
     })
+  }
+
+  const handleDelete = (id: number) => {
+    dispatch(deleteCommand(id))
   }
 
   return (
@@ -55,18 +47,26 @@ export const RiscVCommandsGridPage: FC = () => {
           range={{ min_operands, max_operands }}
           onSubmit={handleFilterSubmit}
         />
-        {errorMessage && (
+        {listError && (
           <p className="form-error" role="alert">
-            {errorMessage}
+            {listError}
           </p>
         )}
-        {isLoading && <LoadingIndicator />}
-        {riscvCommands && !isLoading && (
+        {!listLoading && (
           <div className="instruction-grid">
-            {riscvCommands.map((riscvCommand) => (
-              <RiscVCommandCard key={riscvCommand.id} riscvCommand={riscvCommand} />
+            {commands.map((riscvCommand) => (
+              <RiscVCommandCard
+                key={riscvCommand.id}
+                riscvCommand={riscvCommand}
+                onDelete={
+                  isAuthenticated && riscvCommand.is_creator === 1
+                    ? () => handleDelete(riscvCommand.id)
+                    : undefined
+                }
+                isDeleting={deletingId === riscvCommand.id}
+              />
             ))}
-            {riscvCommands.length === 0 && (
+            {commands.length === 0 && (
               <p className="instruction-empty">Для выбранного диапазона команд нет.</p>
             )}
           </div>

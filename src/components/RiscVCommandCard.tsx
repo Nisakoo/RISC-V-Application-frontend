@@ -1,17 +1,20 @@
 import { FC } from 'react'
-import { Card } from 'react-bootstrap'
+import { Button, Card } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
+
 import { useMediaFallback } from '../hooks/useMediaFallback'
 import { DEFAULT_IMAGE_URL } from '../modules/media'
-import type { RiscVCommand } from '../modules/riscvCommandsApi'
+import type { RiscVCommandListItem } from '../modules/riscvCommand'
 import { feedURL } from '../Routes'
 
 interface Props {
-  riscvCommand: RiscVCommand
+  riscvCommand: RiscVCommandListItem
+  onDelete?: () => void
+  isDeleting?: boolean
 }
 
 // Карточка команды на странице плитки: изображение ведёт в ленту на эту команду
-export const RiscVCommandCard: FC<Props> = ({ riscvCommand }) => {
+export const RiscVCommandCard: FC<Props> = ({ riscvCommand, onDelete, isDeleting }) => {
   const { id, mnemonic, image_url, operand_count, length_bits, like_count } = riscvCommand
   const image = useMediaFallback(image_url, DEFAULT_IMAGE_URL)
 
@@ -35,6 +38,18 @@ export const RiscVCommandCard: FC<Props> = ({ riscvCommand }) => {
           </span>
           <span aria-label={`${like_count} отметок нравится`}>♡ {like_count}</span>
         </div>
+        {onDelete && (
+          <Button
+            type="button"
+            variant="outline-danger"
+            size="sm"
+            className="instruction-card__delete"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Удаляем…' : 'Удалить'}
+          </Button>
+        )}
       </Card.Body>
     </Card>
   )

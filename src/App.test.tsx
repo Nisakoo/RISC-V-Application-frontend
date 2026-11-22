@@ -1,8 +1,34 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { Provider } from 'react-redux'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { api } from './api'
+import { http } from './api/http'
+import type { HandlerApiFeedCommand, HandlerApiListCommand } from './api/Api'
+import { setUser } from './slices/userSlice'
 import { AppRoutes } from './App'
 import { DEFAULT_IMAGE_URL, DEFAULT_VIDEO_URL } from './modules/media'
+import { createAppStore } from './store'
+
+// В тестах backend недоступен: гость должен получать mock-данные
+vi.mock('./api', () => ({
+  api: {
+    riscvCommandsList: vi.fn(),
+    riscvCommandsFeedList: vi.fn(),
+    riscvCommandsDraftList: vi.fn(),
+    riscvCommandsCreate: vi.fn(),
+    riscvCommandsPublishUpdate: vi.fn(),
+    riscvCommandsDelete: vi.fn(),
+    riscvCommandsLikeCreate: vi.fn(),
+  },
+}))
+
+vi.mock('./api/http', () => ({
+  http: {
+    post: vi.fn(),
+  },
+}))
 
 // Показывает текущий адрес, чтобы проверять сохранение фильтра в URL
 const LocationProbe = () => {
@@ -10,16 +36,32 @@ const LocationProbe = () => {
   return <div data-testid="location">{location.pathname + location.search}</div>
 }
 
-const renderAt = (url: string) =>
-  render(
-    <MemoryRouter initialEntries={[url]}>
-      <AppRoutes />
-      <LocationProbe />
-    </MemoryRouter>,
+const renderAt = (url: string, store = createAppStore()) => {
+  const view = render(
+    <Provider store={store}>
+      <MemoryRouter initialEntries={[url]}>
+        <AppRoutes />
+        <LocationProbe />
+      </MemoryRouter>
+    </Provider>,
   )
+  return { ...view, store }
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  vi.mocked(http.post).mockReset()
+  vi.mocked(api.riscvCommandsList).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsFeedList).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsDraftList).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsCreate).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsPublishUpdate).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsDelete).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsLikeCreate).mockReset().mockRejectedValue(new Error('offline'))
+})
 
 describe('нижняя навигация', () => {
-  it('содержит четыре пункта, из которых доступны лента и плитка', async () => {
+  it('содержит четыре пункта, доступных гостю', async () => {
     renderAt('/riscv_commands/grid')
     const navigation = await screen.findByRole('navigation', { name: 'Основная навигация' })
     const items = within(navigation).getAllByText(/Лента|Добавить|Плитка|Вход/)
@@ -29,19 +71,50 @@ describe('нижняя навигация', () => {
       'href',
       '/riscv_commands/feed',
     )
+    expect(within(navigation).getByRole('link', { name: 'Добавить' })).toHaveAttribute(
+      'href',
+      '/riscv_commands/add',
+    )
     expect(within(navigation).getByRole('link', { name: 'Плитка' })).toHaveAttribute(
       'aria-current',
       'page',
     )
-    expect(within(navigation).queryByRole('link', { name: 'Добавить' })).not.toBeInTheDocument()
-    expect(within(navigation).queryByRole('link', { name: 'Вход' })).not.toBeInTheDocument()
-    expect(within(navigation).getByText('Вход').closest('.disabled')).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: 'Вход' })).toHaveAttribute(
+      'href',
+      '/login',
+    )
   })
 
   it('перенаправляет корневой адрес на ленту', async () => {
     renderAt('/')
     expect(await screen.findByText('ADD')).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/riscv_commands/feed')
+  })
+
+  it('при выходе очищает сессию и возвращает гостя', async () => {
+    vi.mocked(http.post).mockResolvedValue({ data: undefined } as never)
+    localStorage.setItem('access_token', 'jwt-token')
+    const store = createAppStore()
+    store.dispatch(setUser({ login: 'rv32_author', role: 'user' }))
+    renderAt('/riscv_commands/grid', store)
+
+    fireEvent.click(await screen.findByRole('button', { name: /Выйти из аккаунта/ }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Вход' })).toBeInTheDocument()
+    })
+    expect(http.post).toHaveBeenCalledWith('/api/users/logout')
+    expect(localStorage.getItem('access_token')).toBeNull()
+  })
+
+  it('для авторизованного пользователя вместо входа показывает выход', async () => {
+    const store = createAppStore()
+    store.dispatch(setUser({ login: 'rv32_author', role: 'user' }))
+    renderAt('/riscv_commands/grid', store)
+
+    expect(await screen.findByRole('button', { name: /Выйти из аккаунта/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Вход' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Выйти из аккаунта/ })).toBeInTheDocument()
   })
 })
 
@@ -142,5 +215,70 @@ describe('страница ленты', () => {
       'href',
       '/riscv_commands/feed',
     )
+  })
+
+  it('предлагает гостю войти при попытке поставить лайк', async () => {
+    renderAt('/riscv_commands/feed?id=1')
+    const likeButton = await screen.findByRole('button', { name: 'Войдите, чтобы поставить лайк' })
+    fireEvent.click(likeButton)
+    expect(screen.getByTestId('location')).toHaveTextContent('/login')
+  })
+
+  it('защищает страницу добавления от гостя', async () => {
+    renderAt('/riscv_commands/add')
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/login')
+  })
+})
+
+
+describe('домен команд: действия авторизованного пользователя', () => {
+  const ownCommand: HandlerApiListCommand = {
+    id: 1,
+    mnemonic: 'ADD',
+    description: 'Складывает значения регистров.',
+    operand_count: 3,
+    length_bits: 32,
+    image_url: '',
+    video_url: '',
+    like_count: 2,
+    is_creator: 1,
+  }
+
+  const feedCommand: HandlerApiFeedCommand = {
+    ...ownCommand,
+    is_liked: 0,
+    next_id: 4,
+  }
+
+  it('удаляет свою команду с плитки', async () => {
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({ data: [ownCommand] } as never)
+    vi.mocked(api.riscvCommandsDelete).mockResolvedValue({ data: undefined } as never)
+    const store = createAppStore()
+    store.dispatch(setUser({ login: 'rv32_author', role: 'user' }))
+    renderAt('/riscv_commands/grid', store)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Удалить' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'ADD' })).not.toBeInTheDocument()
+    })
+    expect(api.riscvCommandsDelete).toHaveBeenCalledWith(1)
+  })
+
+  it('ставит лайк в ленте и обновляет счётчик', async () => {
+    vi.mocked(api.riscvCommandsFeedList).mockResolvedValue({ data: feedCommand } as never)
+    vi.mocked(api.riscvCommandsLikeCreate).mockResolvedValue({
+      data: { like: 1, like_count: 5 },
+    } as never)
+    const store = createAppStore()
+    store.dispatch(setUser({ login: 'rv32_author', role: 'user' }))
+    renderAt('/riscv_commands/feed?id=1', store)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Поставить лайк' }))
+
+    const likedButton = await screen.findByRole('button', { name: 'Убрать лайк' })
+    expect(likedButton).toHaveAttribute('aria-pressed', 'true')
+    expect(within(likedButton).getByText('5')).toBeInTheDocument()
   })
 })

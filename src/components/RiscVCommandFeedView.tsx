@@ -1,17 +1,29 @@
 import { FC, SyntheticEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
+
 import { useMediaFallback } from '../hooks/useMediaFallback'
 import { DEFAULT_IMAGE_URL, DEFAULT_VIDEO_URL } from '../modules/media'
-import type { RiscVCommand } from '../modules/riscvCommandsApi'
+import type { RiscVCommand } from '../modules/riscvCommand'
 import { feedURL } from '../Routes'
 
 interface Props {
   riscvCommand: RiscVCommand
   nextId: number
+  isLiked: boolean
+  isAuthenticated: boolean
+  likePending: boolean
+  onLike: () => void
 }
 
 // Экран ленты одной команды: видео, описание, параметры, лайки и переход к следующей
-export const RiscVCommandFeedView: FC<Props> = ({ riscvCommand, nextId }) => {
+export const RiscVCommandFeedView: FC<Props> = ({
+  riscvCommand,
+  nextId,
+  isLiked,
+  isAuthenticated,
+  likePending,
+  onLike,
+}) => {
   const { mnemonic, description, operand_count, length_bits, like_count } = riscvCommand
   const video = useMediaFallback(riscvCommand.video_url, DEFAULT_VIDEO_URL)
   const poster = useMediaFallback(riscvCommand.image_url, DEFAULT_IMAGE_URL)
@@ -75,12 +87,25 @@ export const RiscVCommandFeedView: FC<Props> = ({ riscvCommand, nextId }) => {
             )}
           </button>
           <div className="feed-actions">
-            <div className="feed-like" aria-label={`${like_count} отметок нравится`}>
+            <button
+              type="button"
+              className={`feed-like${isLiked ? ' feed-like--active' : ''}`}
+              aria-label={
+                isAuthenticated
+                  ? isLiked
+                    ? 'Убрать лайк'
+                    : 'Поставить лайк'
+                  : 'Войдите, чтобы поставить лайк'
+              }
+              aria-pressed={isLiked}
+              disabled={likePending}
+              onClick={onLike}
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
               </svg>
               <small>{like_count}</small>
-            </div>
+            </button>
             <dl className="feed-properties" aria-label="Параметры инструкции">
               <div>
                 <dt className="visually-hidden">Операнды</dt>

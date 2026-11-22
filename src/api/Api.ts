@@ -1,0 +1,557 @@
+/* eslint-disable */
+/* tslint:disable */
+// @ts-nocheck
+/*
+ * ---------------------------------------------------------------
+ * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
+ * ##                                                           ##
+ * ## AUTHOR: acacode                                           ##
+ * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
+ * ---------------------------------------------------------------
+ */
+
+export enum DomainUserRole {
+  UserRoleUser = "user",
+  UserRoleModerator = "moderator",
+}
+
+export enum DomainRiscVCommandStatus {
+  RiscVCommandDraft = "draft",
+  RiscVCommandPublished = "published",
+  RiscVCommandDeleted = "deleted",
+}
+
+export interface DomainPublishRiscVCommandDraft {
+  description?: string;
+  length_bits?: number;
+  operand_count?: number;
+}
+
+export interface HandlerApiAuthentication {
+  access_token?: string;
+  /** @example 3600 */
+  expires_in?: number;
+  /** @example "rv32_author" */
+  login?: string;
+  /** @example "user" */
+  role?: "user" | "moderator";
+  /** @example "Bearer" */
+  token_type?: string;
+}
+
+export interface HandlerApiCommand {
+  created_at?: string;
+  creator_login?: string;
+  description?: string;
+  id?: number;
+  image_key?: string;
+  image_url?: string;
+  length_bits?: number;
+  like_count?: number;
+  mnemonic?: string;
+  operand_count?: number;
+  published_at?: string;
+  status?: DomainRiscVCommandStatus;
+  video_key?: string;
+  video_url?: string;
+}
+
+export interface HandlerApiCredentials {
+  /** @example "rv32_author" */
+  login?: string;
+  /** @example "correct-horse-battery" */
+  password?: string;
+}
+
+export interface HandlerApiErrorResponse {
+  /** @example "Команда RISC-V не найдена." */
+  message?: string;
+}
+
+export interface HandlerApiFeedCommand {
+  created_at?: string;
+  creator_login?: string;
+  description?: string;
+  id?: number;
+  image_key?: string;
+  image_url?: string;
+  is_liked?: number;
+  length_bits?: number;
+  like_count?: number;
+  mnemonic?: string;
+  next_id?: number;
+  operand_count?: number;
+  published_at?: string;
+  status?: DomainRiscVCommandStatus;
+  video_key?: string;
+  video_url?: string;
+}
+
+export interface HandlerApiLikeRequest {
+  /** @example 1 */
+  like?: 0 | 1;
+}
+
+export interface HandlerApiLikeResponse {
+  /** @example 1 */
+  like?: number;
+  /** @example 4 */
+  like_count?: number;
+}
+
+export interface HandlerApiListCommand {
+  created_at?: string;
+  creator_login?: string;
+  description?: string;
+  id?: number;
+  image_key?: string;
+  image_url?: string;
+  is_creator?: number;
+  length_bits?: number;
+  like_count?: number;
+  mnemonic?: string;
+  operand_count?: number;
+  published_at?: string;
+  status?: DomainRiscVCommandStatus;
+  video_key?: string;
+  video_url?: string;
+}
+
+export interface HandlerApiRegisteredUser {
+  /** @example 7 */
+  id?: number;
+  /** @example "rv32_author" */
+  login?: string;
+}
+
+import type {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  HeadersDefaults,
+  ResponseType,
+} from "axios";
+import axios from "axios";
+
+export type QueryParamsType = Record<string | number, any>;
+
+export interface FullRequestParams
+  extends Omit<AxiosRequestConfig, "data" | "params" | "url" | "responseType"> {
+  /** set parameter to `true` for call `securityWorker` for this request */
+  secure?: boolean;
+  /** request path */
+  path: string;
+  /** content type of request body */
+  type?: ContentType;
+  /** query params */
+  query?: QueryParamsType;
+  /** format of response (i.e. response.json() -> format: "json") */
+  format?: ResponseType;
+  /** request body */
+  body?: unknown;
+}
+
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
+
+export interface ApiConfig<SecurityDataType = unknown>
+  extends Omit<AxiosRequestConfig, "data" | "cancelToken"> {
+  securityWorker?: (
+    securityData: SecurityDataType | null,
+  ) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
+  secure?: boolean;
+  format?: ResponseType;
+}
+
+export enum ContentType {
+  Json = "application/json",
+  JsonApi = "application/vnd.api+json",
+  FormData = "multipart/form-data",
+  UrlEncoded = "application/x-www-form-urlencoded",
+  Text = "text/plain",
+}
+
+export class HttpClient<SecurityDataType = unknown> {
+  public instance: AxiosInstance;
+  private securityData: SecurityDataType | null = null;
+  private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
+  private secure?: boolean;
+  private format?: ResponseType;
+
+  constructor({
+    securityWorker,
+    secure,
+    format,
+    ...axiosConfig
+  }: ApiConfig<SecurityDataType> = {}) {
+    this.instance = axios.create({
+      ...axiosConfig,
+      baseURL: axiosConfig.baseURL || "/",
+    });
+    this.secure = secure;
+    this.format = format;
+    this.securityWorker = securityWorker;
+  }
+
+  public setSecurityData = (data: SecurityDataType | null) => {
+    this.securityData = data;
+  };
+
+  protected mergeRequestParams(
+    params1: AxiosRequestConfig,
+    params2?: AxiosRequestConfig,
+  ): AxiosRequestConfig {
+    const method = params1.method || (params2 && params2.method);
+
+    return {
+      ...this.instance.defaults,
+      ...params1,
+      ...(params2 || {}),
+      headers: {
+        ...((method &&
+          this.instance.defaults.headers[
+            method.toLowerCase() as keyof HeadersDefaults
+          ]) ||
+          {}),
+        ...(params1.headers || {}),
+        ...((params2 && params2.headers) || {}),
+      },
+    };
+  }
+
+  protected stringifyFormItem(formItem: unknown) {
+    if (typeof formItem === "object" && formItem !== null) {
+      return JSON.stringify(formItem);
+    } else {
+      return `${formItem}`;
+    }
+  }
+
+  protected createFormData(input: Record<string, unknown>): FormData {
+    if (input instanceof FormData) {
+      return input;
+    }
+    return Object.keys(input || {}).reduce((formData, key) => {
+      const property = input[key];
+      const propertyContent: any[] =
+        property instanceof Array ? property : [property];
+
+      for (const formItem of propertyContent) {
+        const isFileType = formItem instanceof Blob || formItem instanceof File;
+        formData.append(
+          key,
+          isFileType ? formItem : this.stringifyFormItem(formItem),
+        );
+      }
+
+      return formData;
+    }, new FormData());
+  }
+
+  public request = async <T = any, _E = any>({
+    secure,
+    path,
+    type,
+    query,
+    format,
+    body,
+    ...params
+  }: FullRequestParams): Promise<AxiosResponse<T>> => {
+    const secureParams =
+      ((typeof secure === "boolean" ? secure : this.secure) &&
+        this.securityWorker &&
+        (await this.securityWorker(this.securityData))) ||
+      {};
+    const requestParams = this.mergeRequestParams(params, secureParams);
+    const responseFormat = format || this.format || undefined;
+
+    if (
+      type === ContentType.FormData &&
+      body &&
+      body !== null &&
+      typeof body === "object"
+    ) {
+      body = this.createFormData(body as Record<string, unknown>);
+    }
+
+    if (
+      type === ContentType.Text &&
+      body &&
+      body !== null &&
+      typeof body !== "string"
+    ) {
+      body = JSON.stringify(body);
+    }
+
+    return this.instance.request({
+      ...requestParams,
+      headers: {
+        ...(requestParams.headers || {}),
+        ...(type ? { "Content-Type": type } : {}),
+      },
+      params: query,
+      responseType: responseFormat,
+      data: body,
+      url: path,
+    });
+  };
+}
+
+/**
+ * @title API команд RISC-V
+ * @version 1.0
+ * @baseUrl /
+ * @contact
+ *
+ * Веб-сервис каталога команд RISC-V: лента, черновики, публикация, лайки и пользователи. Без JWT доступно только чтение списка и ленты.
+ */
+export class Api<
+  SecurityDataType extends unknown,
+> extends HttpClient<SecurityDataType> {
+  api = {
+    /**
+     * @description Возвращает опубликованные команды с фильтрацией по количеству операндов. Доступен гостю; для аутентифицированного пользователя is_creator = 1 у его команд.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsList
+     * @summary Список опубликованных команд RISC-V
+     * @request GET:/api/riscv_commands
+     * @secure
+     */
+    riscvCommandsList: (
+      query?: {
+        /**
+         * Минимальное количество операндов
+         * @min 0
+         * @max 3
+         */
+        min_operands?: number;
+        /**
+         * Максимальное количество операндов
+         * @min 0
+         * @max 3
+         */
+        max_operands?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiListCommand[], HandlerApiErrorResponse>({
+        path: `/api/riscv_commands`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Создаёт черновик из мнемоники, изображения и короткого видео. Файлы сохраняются в MinIO под латинскими именами, создатель определяется по JWT.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsCreate
+     * @summary Создание черновика команды RISC-V
+     * @request POST:/api/riscv_commands
+     * @secure
+     */
+    riscvCommandsCreate: (
+      data: {
+        /**
+         * Мнемоника команды RISC-V
+         * @example "XORI"
+         */
+        mnemonic: string;
+        /**
+         * Изображение PNG, JPEG или WebP до 5 МиБ
+         * @format binary
+         */
+        image: File;
+        /**
+         * Короткое видео MP4 до 50 МиБ
+         * @format binary
+         */
+        video: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiCommand, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Возвращает единственный черновик пользователя, определённого по JWT; идентификатор не передаётся.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsDraftList
+     * @summary Черновик команды RISC-V текущего пользователя
+     * @request GET:/api/riscv_commands/draft
+     * @secure
+     */
+    riscvCommandsDraftList: (params: RequestParams = {}) =>
+      this.request<HandlerApiCommand, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/draft`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Без id возвращает первую команду ленты, с id — указанную, с id и next=true — следующую после неё. Доступна гостю; is_liked = 1, если аутентифицированный пользователь поставил лайк.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsFeedList
+     * @summary Лента опубликованных команд RISC-V
+     * @request GET:/api/riscv_commands/feed
+     * @secure
+     */
+    riscvCommandsFeedList: (
+      query?: {
+        /**
+         * Идентификатор команды RISC-V
+         * @min 1
+         */
+        id?: number;
+        /** Вернуть следующую команду после id */
+        next?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiFeedCommand, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/feed`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Меняет статус собственной команды пользователя на deleted.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsDelete
+     * @summary Логическое удаление команды RISC-V
+     * @request DELETE:/api/riscv_commands/{id}
+     * @secure
+     */
+    riscvCommandsDelete: (id: number, params: RequestParams = {}) =>
+      this.request<void, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/${id}`,
+        method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * @description like = 1 ставит лайк от текущего пользователя, like = 0 отменяет его.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsLikeCreate
+     * @summary Лайк опубликованной команды RISC-V
+     * @request POST:/api/riscv_commands/{id}/like
+     * @secure
+     */
+    riscvCommandsLikeCreate: (
+      id: number,
+      body: HandlerApiLikeRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiLikeResponse, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/${id}/like`,
+        method: "POST",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Заполняет описание и поля команды и меняет статус черновика текущего пользователя на published. Системные поля передавать запрещено.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsPublishUpdate
+     * @summary Публикация черновика команды RISC-V
+     * @request PUT:/api/riscv_commands/{id}/publish
+     * @secure
+     */
+    riscvCommandsPublishUpdate: (
+      id: number,
+      body: DomainPublishRiscVCommandDraft,
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiCommand, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/${id}/publish`,
+        method: "PUT",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Создаёт пользователя с ролью user. Логин: латиница, цифры и _, 3–64 символа; пароль: 8–72 символа.
+     *
+     * @tags users
+     * @name UsersCreate
+     * @summary Регистрация пользователя
+     * @request POST:/api/users
+     */
+    usersCreate: (body: HandlerApiCredentials, params: RequestParams = {}) =>
+      this.request<HandlerApiRegisteredUser, HandlerApiErrorResponse>({
+        path: `/api/users`,
+        method: "POST",
+        body: body,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Проверяет логин и пароль и возвращает JWT доступа. Токен передаётся в остальных запросах заголовком Authorization: Bearer <token>.
+     *
+     * @tags users
+     * @name UsersAuthenticationCreate
+     * @summary Аутентификация пользователя
+     * @request POST:/api/users/authentication
+     */
+    usersAuthenticationCreate: (
+      body: HandlerApiCredentials,
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiAuthentication, HandlerApiErrorResponse>({
+        path: `/api/users/authentication`,
+        method: "POST",
+        body: body,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Помещает текущий JWT в blacklist Redis до истечения его срока; повторно использовать токен нельзя.
+     *
+     * @tags users
+     * @name UsersLogoutCreate
+     * @summary Деавторизация пользователя
+     * @request POST:/api/users/logout
+     * @secure
+     */
+    usersLogoutCreate: (params: RequestParams = {}) =>
+      this.request<void, HandlerApiErrorResponse>({
+        path: `/api/users/logout`,
+        method: "POST",
+        secure: true,
+        ...params,
+      }),
+  };
+}
