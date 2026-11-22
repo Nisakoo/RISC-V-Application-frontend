@@ -22,7 +22,8 @@ export const AppRoutes: FC = () => (
 )
 
 const App: FC = () => (
-  <BrowserRouter>
+  // basename совпадает с base Vite: на GitHub Pages приложение лежит в подкаталоге репозитория
+  <BrowserRouter basename={import.meta.env.BASE_URL}>
     <AppRoutes />
   </BrowserRouter>
 )

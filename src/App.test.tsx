@@ -150,6 +150,27 @@ describe('страница плитки', () => {
     expect(await screen.findByText('Для выбранного диапазона команд нет.')).toBeInTheDocument()
   })
 
+  it('сохраняет фильтр после перехода в ленту и возврата через навигацию', async () => {
+    renderAt('/riscv_commands/grid')
+    await screen.findByRole('heading', { name: 'ADD' })
+    fireEvent.change(screen.getByLabelText('Максимальное количество операндов'), {
+      target: { value: '0' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
+    fireEvent.click(await screen.findByAltText('Схема команды ECALL'))
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/riscv_commands/feed?id=')
+    })
+
+    fireEvent.click(screen.getByRole('link', { name: 'Плитка' }))
+
+    expect(await screen.findByRole('heading', { name: 'ECALL' })).toBeInTheDocument()
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/riscv_commands/grid?min_operands=0&max_operands=0',
+    )
+  })
+
   it('показывает изображение по умолчанию во всех карточках', async () => {
     renderAt('/riscv_commands/grid')
     await screen.findByAltText('Схема команды XOR')

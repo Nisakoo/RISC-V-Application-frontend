@@ -4,3 +4,10 @@ dist/
 .env
 .env.local
 .DS_Store
+
+# Сертификаты HTTPS (mkcert): приватные ключи нельзя публиковать
+ca.key
+ca.crt
+cert.key
+cert.crt
+dev-dist/

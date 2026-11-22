@@ -13,6 +13,9 @@
 :root {
   --app-max-width: 440px;
   --navigation-height: 82px;
+  /* Адаптивность: ширина приложения и число колонок плитки меняются медиазапросами ниже */
+  --grid-columns: 2;
+  --grid-gap: 12px;
   --color-text: #292a34;
   --color-accent: #f3bf4f;
   --color-accent-hover: #e5b44a;
@@ -553,8 +556,8 @@ textarea { font: inherit; }
 
 .instruction-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  gap: var(--grid-gap);
 }
 
 /* Карточка Card из React-Bootstrap без рамки и скругления, как в макете */
@@ -650,6 +653,50 @@ textarea { font: inherit; }
 .status-page p { margin: 0; }
 .status-page h1 { font-size: 2em; font-weight: 700; }
 .status-page .primary-action { margin-top: 8px; }
+
+/*
+  Адаптивность (точки перелома по Bootstrap):
+  до 359px — 1 колонка карточек;
+  360–575px — телефон, 2 колонки, ширина приложения 440px;
+  576–991px — планшет, 3 колонки, ширина 720px;
+  992px и шире — десктоп, 4 колонки, ширина 960px.
+  Нижняя навигация остаётся на всех ширинах.
+*/
+@media (max-width: 359px) {
+  :root { --grid-columns: 1; }
+  .page-content { padding: 24px 16px 24px; }
+  .page-content h1 { font-size: 26px; }
+}
+
+@media (min-width: 576px) {
+  :root {
+    --app-max-width: 720px;
+    --grid-columns: 3;
+    --grid-gap: 16px;
+  }
+
+  /* Широкое видео ленты не обрезается: поля заполняет тёмный фон */
+  .feed-video { object-fit: contain; }
+
+  .auth-form,
+  .add-form,
+  .draft-panel,
+  .auth-page__hint,
+  .add-page__hint {
+    width: 100%;
+    max-width: 520px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 992px) {
+  :root {
+    --app-max-width: 960px;
+    --grid-columns: 4;
+    --grid-gap: 20px;
+  }
+}
 
 @media (min-width: 700px) {
   body { padding: 20px 0; }

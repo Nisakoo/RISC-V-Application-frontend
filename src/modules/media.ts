@@ -1,6 +1,6 @@
 // Изображение и видео по умолчанию лежат в самом проекте (каталог public/defaults)
-export const DEFAULT_IMAGE_URL = '/defaults/image.svg'
-export const DEFAULT_VIDEO_URL = '/defaults/video.mp4'
+export const DEFAULT_IMAGE_URL = `${import.meta.env.BASE_URL}defaults/image.svg`
+export const DEFAULT_VIDEO_URL = `${import.meta.env.BASE_URL}defaults/video.mp4`
 
 // В dev-режиме медиа из MinIO идут через прокси Vite, чтобы не зависеть от CORS
 const MINIO_ORIGIN = import.meta.env.VITE_MEDIA_ORIGIN || 'http://localhost:9000'

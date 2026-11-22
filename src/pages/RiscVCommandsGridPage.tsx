@@ -1,11 +1,13 @@
-import { FC, useEffect } from 'react'
+import { FC, useEffect, useRef } from 'react'
+import { useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 
 import { OperandRangeFilter } from '../components/OperandRangeFilter'
 import { RiscVCommandCard } from '../components/RiscVCommandCard'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAppDispatch, useAppSelector } from '../hooks/store'
-import { parseOperandRange } from '../modules/riscvCommand'
+import { OPERAND_COUNT_MAX, OPERAND_COUNT_MIN, parseOperandRange } from '../modules/riscvCommand'
+import type { RootState } from '../store'
 import { deleteCommand, fetchCommands, setFilters } from '../slices/riscvCommandsSlice'
 
 // Страница плитки: /riscv_commands/grid?min_operands=<0–3>&max_operands=<0–3>
@@ -20,8 +22,33 @@ export const RiscVCommandsGridPage: FC = () => {
   )
   const isAuthenticated = useAppSelector((state) => state.user.isAuthenticated)
 
+  // При возврате из ленты адрес приходит без параметров: сохранённый в Redux фильтр
+  // возвращается в URL, а не затирается диапазоном по умолчанию.
+  // Эффект объявлен раньше загрузки, поэтому читает фильтр до его перезаписи.
+  const store = useStore<RootState>()
+  const isRestoring = useRef(false)
+  useEffect(() => {
+    const stored = store.getState().riscvCommands.filters
+    const hasFilterInUrl = searchParams.has('min_operands') || searchParams.has('max_operands')
+    const isDefault =
+      stored.min_operands === OPERAND_COUNT_MIN && stored.max_operands === OPERAND_COUNT_MAX
+    if (hasFilterInUrl || isDefault) return
+    isRestoring.current = true
+    setSearchParams(
+      { min_operands: String(stored.min_operands), max_operands: String(stored.max_operands) },
+      { replace: true },
+    )
+    // Восстановление выполняется один раз при открытии страницы
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Фильтр хранится в Redux, а URL сохраняет его при обновлении страницы и переходе назад
   useEffect(() => {
+    // Пока фильтр восстанавливается в URL, запрос с диапазоном по умолчанию не нужен
+    if (isRestoring.current) {
+      isRestoring.current = false
+      return
+    }
     dispatch(setFilters({ min_operands, max_operands }))
     dispatch(fetchCommands())
   }, [dispatch, min_operands, max_operands, isAuthenticated])
