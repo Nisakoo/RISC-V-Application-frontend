@@ -21,6 +21,10 @@ export const getApiErrorMessage = (error: unknown, fallback: string): string => 
 export const isApiStatus = (error: unknown, status: number): boolean =>
   axios.isAxiosError(error) && error.response?.status === status
 
+// Сборка для GitHub Pages (VITE_MOCK_ONLY=true): backend там нет, а сам хостинг отвечает 404
+// на любой запрос к /api, поэтому такой ответ тоже считается недоступностью backend
+const MOCK_ONLY = import.meta.env.VITE_MOCK_ONLY === 'true'
+
 // Сервер не ответил (сеть, прокси, остановленный backend): только тогда гость получает mock
 export const isBackendUnavailable = (error: unknown): boolean =>
-  !(axios.isAxiosError(error) && error.response)
+  MOCK_ONLY || !(axios.isAxiosError(error) && error.response)

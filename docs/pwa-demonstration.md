@@ -53,12 +53,12 @@ make lab7-run
 
 ```bash
 cd frontend
-npm run build:pages   # VITE_BASE=/RISC-V-Application-frontend/ npm run build
+npm run build:pages   # VITE_BASE=/RISC-V-Application-frontend/ VITE_MOCK_ONLY=true npm run build
 npm run deploy        # gh-pages -d dist
 ```
 
 Приложение появится на `https://<пользователь GitHub>.github.io/RISC-V-Application-frontend/`.
-На Pages нет бэкенда, поэтому гость видит mock-команды: запросы к `/api` завершаются ошибкой, а mock-fallback из ЛР6 подставляет данные.
+На Pages нет бэкенда, а хостинг отвечает 404 на любой запрос к `/api`. Без особого режима слайс счёл бы это ошибкой backend и не показал бы mock, поэтому сборка для Pages выполняется с `VITE_MOCK_ONLY=true`: гость всегда получает mock-команды.
 
 ## Порядок проверки
 

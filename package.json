@@ -8,7 +8,7 @@
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "build:pages": "VITE_BASE=/RISC-V-Application-frontend/ npm run build",
+    "build:pages": "VITE_BASE=/RISC-V-Application-frontend/ VITE_MOCK_ONLY=true npm run build",
     "deploy": "gh-pages -d dist",
     "generate-api": "node scripts/generate-api.mjs"
   },
