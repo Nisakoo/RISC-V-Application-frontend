@@ -1,12 +1,16 @@
 import type {
   DomainRiscVCommandStatus,
   HandlerApiCommand,
+  HandlerApiFeedBatch,
+  HandlerApiFeedBatchItem,
   HandlerApiFeedCommand,
   HandlerApiListCommand,
 } from '../api/Api'
 
 export const OPERAND_COUNT_MIN = 0
 export const OPERAND_COUNT_MAX = 3
+// Размер страницы плитки: совпадает со значением по умолчанию backend
+export const PAGE_LIMIT = 12
 export const COMMAND_LENGTH_OPTIONS = [16, 32, 48, 64] as const
 
 // Доменная модель команды с обязательными полями, которые нужны интерфейсу
@@ -35,6 +39,25 @@ export interface RiscVCommandFeed {
   is_liked: 0 | 1
 }
 
+// Страница плитки: команды страницы и общее количество команд фильтра
+export interface RiscVCommandPage {
+  commands: RiscVCommandListItem[]
+  total: number
+}
+
+// Команда порции ленты с порядковым номером в сессии
+export interface FeedBatchItem {
+  riscv_command: RiscVCommand
+  position: number
+  is_liked: 0 | 1
+}
+
+export interface FeedBatch {
+  session_id: string
+  batch_number: number
+  items: FeedBatchItem[]
+}
+
 export interface OperandRange {
   min_operands: number
   max_operands: number
@@ -58,7 +81,11 @@ export const parseOperandRange = (searchParams: URLSearchParams): OperandRange =
 
 // Приводит необязательные поля сгенерированного клиента к доменной модели
 export const toRiscVCommand = (
-  command: HandlerApiCommand | HandlerApiListCommand | HandlerApiFeedCommand,
+  command:
+    | HandlerApiCommand
+    | HandlerApiListCommand
+    | HandlerApiFeedCommand
+    | HandlerApiFeedBatchItem,
 ): RiscVCommand => ({
   id: command.id ?? 0,
   mnemonic: command.mnemonic ?? '',
@@ -82,3 +109,21 @@ export const toRiscVCommandFeed = (command: HandlerApiFeedCommand): RiscVCommand
   next_id: command.next_id ?? command.id ?? 0,
   is_liked: command.is_liked === 1 ? 1 : 0,
 })
+
+const toFeedBatchItem = (item: HandlerApiFeedBatchItem): FeedBatchItem => ({
+  riscv_command: toRiscVCommand(item),
+  position: item.position ?? 0,
+  is_liked: item.is_liked === 1 ? 1 : 0,
+})
+
+export const toFeedBatch = (batch: HandlerApiFeedBatch): FeedBatch => ({
+  session_id: batch.session_id ?? '',
+  batch_number: batch.batch_number ?? 1,
+  items: (batch.items ?? []).map(toFeedBatchItem),
+})
+
+// Номер страницы из URL: положительное целое, иначе первая страница
+export const parsePage = (searchParams: URLSearchParams): number => {
+  const value = searchParams.get('page')
+  return value !== null && /^[1-9]\d{0,6}$/.test(value) ? Number(value) : 1
+}

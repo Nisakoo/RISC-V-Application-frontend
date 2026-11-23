@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 
 import draftReducer from './slices/draftSlice'
+import feedBatchReducer from './slices/feedBatchSlice'
 import riscvCommandsReducer from './slices/riscvCommandsSlice'
 import userReducer from './slices/userSlice'
 
@@ -10,6 +11,7 @@ export const createAppStore = () =>
       user: userReducer,
       riscvCommands: riscvCommandsReducer,
       draft: draftReducer,
+      feedBatch: feedBatchReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({

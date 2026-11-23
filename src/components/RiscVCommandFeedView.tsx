@@ -1,4 +1,4 @@
-import { FC, SyntheticEvent, useState } from 'react'
+import { FC, MouseEvent, SyntheticEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useMediaFallback } from '../hooks/useMediaFallback'
@@ -13,6 +13,10 @@ interface Props {
   isAuthenticated: boolean
   likePending: boolean
   onLike: () => void
+  // Порядковый номер команды в сессии ленты (есть у ленты из Redis)
+  position?: number
+  // Свой переход вместо ссылки: в конце порции сначала загружается следующая
+  onNext?: (event: MouseEvent<HTMLAnchorElement>) => void
 }
 
 // Экран ленты одной команды: видео, описание, параметры, лайки и переход к следующей
@@ -23,6 +27,8 @@ export const RiscVCommandFeedView: FC<Props> = ({
   isAuthenticated,
   likePending,
   onLike,
+  position,
+  onNext,
 }) => {
   const { mnemonic, description, operand_count, length_bits, like_count } = riscvCommand
   const video = useMediaFallback(riscvCommand.video_url, DEFAULT_VIDEO_URL)
@@ -67,6 +73,7 @@ export const RiscVCommandFeedView: FC<Props> = ({
         <p className="feed-eyebrow">
           <span />
           {mnemonic}
+          {position !== undefined && <small className="feed-position">№ {position}</small>}
         </p>
         <div className="feed-information">
           <button
@@ -119,6 +126,7 @@ export const RiscVCommandFeedView: FC<Props> = ({
             <Link
               className="feed-next"
               to={feedURL(nextId)}
+              onClick={onNext}
               aria-label="Следующая команда"
               title="Следующая команда"
             >

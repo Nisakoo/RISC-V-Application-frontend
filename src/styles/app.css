@@ -233,6 +233,14 @@ textarea { font: inherit; }
   background: var(--color-accent);
 }
 
+/* Порядковый номер команды в сессии ленты из Redis */
+.feed-position {
+  margin-left: 10px;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .feed-information {
   display: grid;
   margin-top: auto;
@@ -620,6 +628,25 @@ textarea { font: inherit; }
   margin: 0;
   color: var(--color-muted);
   text-align: center;
+}
+
+.instruction-total {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+/* Пагинация плитки: активная страница в акцентном цвете, номера не переносятся */
+.riscv-pagination {
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 20px 0 0;
+  --bs-pagination-color: #243164;
+  --bs-pagination-active-bg: var(--color-accent);
+  --bs-pagination-active-border-color: var(--color-accent);
+  --bs-pagination-active-color: #243164;
+  --bs-pagination-focus-color: #243164;
+  --bs-pagination-hover-color: #243164;
 }
 
 /* Индикатор загрузки (Spinner из React-Bootstrap) в акцентном цвете */

@@ -2,6 +2,7 @@ import {
   RiscVCommand,
   RiscVCommandFeed,
   RiscVCommandListItem,
+  RiscVCommandPage,
   OperandRange,
 } from './riscvCommand'
 
@@ -116,6 +117,16 @@ export const filterMockCommands = ({
   RISCV_COMMANDS_MOCK.filter(
     (command) => command.operand_count >= min_operands && command.operand_count <= max_operands,
   ).map((command) => ({ ...command, is_creator: 0 }))
+
+// Mock-аналог страницы GET /api/riscv_commands: фильтр и пагинация по mock-коллекции
+export const getMockCommandPage = (
+  range: OperandRange,
+  page: number,
+  limit: number,
+): RiscVCommandPage => {
+  const filtered = filterMockCommands(range)
+  return { commands: filtered.slice((page - 1) * limit, page * limit), total: filtered.length }
+}
 
 // Mock-аналог GET /api/riscv_commands/feed: команда и id следующей по порядку
 export const getMockCommandFeed = (id: number | null): RiscVCommandFeed => {

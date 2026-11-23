@@ -2,13 +2,15 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import { api } from '../api'
 import { getApiErrorMessage, isApiStatus, isBackendUnavailable } from '../modules/apiError'
-import { filterMockCommands, getMockCommandFeed } from '../modules/mock'
+import { getMockCommandFeed, getMockCommandPage } from '../modules/mock'
 import {
   OperandRange,
   OPERAND_COUNT_MAX,
   OPERAND_COUNT_MIN,
+  PAGE_LIMIT,
   RiscVCommandFeed,
   RiscVCommandListItem,
+  RiscVCommandPage,
   toRiscVCommandFeed,
   toRiscVCommandListItem,
 } from '../modules/riscvCommand'
@@ -21,6 +23,9 @@ type ThunkConfig = {
 
 export interface RiscVCommandsState {
   filters: OperandRange
+  // Текущая страница плитки и общее количество команд фильтра (для пагинации)
+  page: number
+  total: number
   commands: RiscVCommandListItem[]
   feed: RiscVCommandFeed | null
   listLoading: boolean
@@ -34,6 +39,8 @@ export interface RiscVCommandsState {
 
 const initialState: RiscVCommandsState = {
   filters: { min_operands: OPERAND_COUNT_MIN, max_operands: OPERAND_COUNT_MAX },
+  page: 1,
+  total: 0,
   commands: [],
   feed: null,
   listLoading: false,
@@ -45,24 +52,30 @@ const initialState: RiscVCommandsState = {
   likePending: false,
 }
 
-// Плитка: фильтр берётся из Redux и передаётся в запрос, а при недоступном backend гость получает mock
-export const fetchCommands = createAsyncThunk<RiscVCommandListItem[], void, ThunkConfig>(
+// Плитка: фильтр и номер страницы берутся из Redux и передаются в запрос,
+// а при недоступном backend гость получает страницу mock-коллекции
+export const fetchCommands = createAsyncThunk<RiscVCommandPage, void, ThunkConfig>(
   'riscvCommands/fetchCommands',
   async (_, { getState, rejectWithValue }) => {
     const state = getState()
-    const filters = state.riscvCommands.filters
+    const { filters, page } = state.riscvCommands
 
     try {
       const response = await api.riscvCommandsList({
         min_operands: filters.min_operands,
         max_operands: filters.max_operands,
+        page,
+        limit: PAGE_LIMIT,
       })
-      return response.data.map(toRiscVCommandListItem)
+      return {
+        commands: (response.data.data ?? []).map(toRiscVCommandListItem),
+        total: response.data.total ?? 0,
+      }
     } catch (error) {
       // Mock допустим только гостю и только если backend не ответил;
       // ответ с ошибкой (404, 5xx) показывается как есть
       if (!state.user.isAuthenticated && isBackendUnavailable(error)) {
-        return filterMockCommands(filters)
+        return getMockCommandPage(filters, page, PAGE_LIMIT)
       }
       return rejectWithValue(getApiErrorMessage(error, 'Не удалось загрузить команды.'))
     }
@@ -135,7 +148,11 @@ const riscvCommandsSlice = createSlice({
     setFilters(state, action: PayloadAction<OperandRange>) {
       state.filters = action.payload
     },
+    setPage(state, action: PayloadAction<number>) {
+      state.page = action.payload
+    },
     resetFilters(state) {
+      state.page = 1
       state.filters = { min_operands: OPERAND_COUNT_MIN, max_operands: OPERAND_COUNT_MAX }
     },
   },
@@ -147,7 +164,8 @@ const riscvCommandsSlice = createSlice({
       })
       .addCase(fetchCommands.fulfilled, (state, action) => {
         state.listLoading = false
-        state.commands = action.payload
+        state.commands = action.payload.commands
+        state.total = action.payload.total
       })
       .addCase(fetchCommands.rejected, (state, action) => {
         state.listLoading = false
@@ -213,5 +231,5 @@ const riscvCommandsSlice = createSlice({
   },
 })
 
-export const { setFilters, resetFilters } = riscvCommandsSlice.actions
+export const { setFilters, setPage, resetFilters } = riscvCommandsSlice.actions
 export default riscvCommandsSlice.reducer

@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from './api'
 import { http } from './api/http'
-import type { HandlerApiFeedCommand, HandlerApiListCommand } from './api/Api'
+import type {
+  HandlerApiFeedBatch,
+  HandlerApiFeedCommand,
+  HandlerApiListCommand,
+} from './api/Api'
 import { setUser } from './slices/userSlice'
 import { AppRoutes } from './App'
 import { DEFAULT_IMAGE_URL, DEFAULT_VIDEO_URL } from './modules/media'
@@ -16,6 +20,7 @@ vi.mock('./api', () => ({
   api: {
     riscvCommandsList: vi.fn(),
     riscvCommandsFeedList: vi.fn(),
+    riscvCommandsFeedBatchList: vi.fn(),
     riscvCommandsDraftList: vi.fn(),
     riscvCommandsCreate: vi.fn(),
     riscvCommandsPublishUpdate: vi.fn(),
@@ -53,6 +58,8 @@ beforeEach(() => {
   vi.mocked(http.post).mockReset()
   vi.mocked(api.riscvCommandsList).mockReset().mockRejectedValue(new Error('offline'))
   vi.mocked(api.riscvCommandsFeedList).mockReset().mockRejectedValue(new Error('offline'))
+  vi.mocked(api.riscvCommandsFeedBatchList).mockReset().mockRejectedValue(new Error('offline'))
+  sessionStorage.clear()
   vi.mocked(api.riscvCommandsDraftList).mockReset().mockRejectedValue(new Error('offline'))
   vi.mocked(api.riscvCommandsCreate).mockReset().mockRejectedValue(new Error('offline'))
   vi.mocked(api.riscvCommandsPublishUpdate).mockReset().mockRejectedValue(new Error('offline'))
@@ -273,7 +280,7 @@ describe('домен команд: действия авторизованног
   }
 
   it('удаляет свою команду с плитки', async () => {
-    vi.mocked(api.riscvCommandsList).mockResolvedValue({ data: [ownCommand] } as never)
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({ data: { data: [ownCommand], total: 1, page: 1, limit: 12 } } as never)
     vi.mocked(api.riscvCommandsDelete).mockResolvedValue({ data: undefined } as never)
     const store = createAppStore()
     store.dispatch(setUser({ login: 'rv32_author', role: 'user' }))
@@ -301,5 +308,130 @@ describe('домен команд: действия авторизованног
     const likedButton = await screen.findByRole('button', { name: 'Убрать лайк' })
     expect(likedButton).toHaveAttribute('aria-pressed', 'true')
     expect(within(likedButton).getByText('5')).toBeInTheDocument()
+  })
+})
+
+describe('плитка: пагинация', () => {
+  const makeCommand = (id: number): HandlerApiListCommand => ({
+    id,
+    mnemonic: `CMD${id}`,
+    description: 'Команда для проверки пагинации.',
+    operand_count: 3,
+    length_bits: 32,
+    image_url: '',
+    video_url: '',
+    like_count: 0,
+    is_creator: 0,
+  })
+
+  it('запрашивает страницу из URL и переходит на следующую', async () => {
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({
+      data: { data: [makeCommand(13)], total: 100, page: 2, limit: 12 },
+    } as never)
+    renderAt('/riscv_commands/grid?min_operands=0&max_operands=3&page=2')
+
+    expect(await screen.findByText('CMD13')).toBeInTheDocument()
+    expect(api.riscvCommandsList).toHaveBeenCalledWith({
+      min_operands: 0,
+      max_operands: 3,
+      page: 2,
+      limit: 12,
+    })
+    // 100 команд по 12 на странице: девять страниц
+    expect(screen.getByText('Найдено команд: 100. Страница 2 из 9.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Следующая страница' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/riscv_commands/grid?min_operands=0&max_operands=3&page=3',
+      )
+    })
+  })
+
+  it('сбрасывает страницу при применении фильтра', async () => {
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({
+      data: { data: [makeCommand(13)], total: 100, page: 3, limit: 12 },
+    } as never)
+    renderAt('/riscv_commands/grid?min_operands=0&max_operands=3&page=3')
+    await screen.findByText('CMD13')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).not.toHaveTextContent('page=')
+    })
+  })
+})
+
+describe('лента из Redis', () => {
+  const batchItem = (id: number, position: number): HandlerApiFeedBatch['items'] => [
+    {
+      id,
+      mnemonic: `CMD${id}`,
+      description: 'Команда порции ленты.',
+      operand_count: 3,
+      length_bits: 32,
+      image_url: '',
+      video_url: '',
+      like_count: 0,
+      position,
+      is_liked: 0,
+    },
+  ]
+
+  const batch = (batchNumber: number, firstPosition: number, ids: number[]): HandlerApiFeedBatch => ({
+    session_id: '0f8fad5bd9cb469fa16570867728950e',
+    batch_number: batchNumber,
+    first_position: firstPosition,
+    items: ids.flatMap((id, index) => batchItem(id, firstPosition + index) ?? []),
+  })
+
+  it('идёт по порции без запросов и загружает новую после последней команды', async () => {
+    vi.mocked(api.riscvCommandsFeedBatchList)
+      .mockResolvedValueOnce({ data: batch(1, 1, [7, 8]) } as never)
+      .mockResolvedValueOnce({ data: batch(2, 3, [9, 10]) } as never)
+    renderAt('/riscv_commands/feed')
+
+    expect(await screen.findByText('CMD7')).toBeInTheDocument()
+    expect(screen.getByText('№ 1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Следующая команда' })).toHaveAttribute(
+      'href',
+      '/riscv_commands/feed?id=8',
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: 'Следующая команда' }))
+    expect(await screen.findByText('CMD8')).toBeInTheDocument()
+    expect(screen.getByText('№ 2')).toBeInTheDocument()
+    expect(api.riscvCommandsFeedList).not.toHaveBeenCalled()
+
+    // После последней команды запрашивается следующая порция, нумерация продолжается
+    fireEvent.click(screen.getByRole('link', { name: 'Следующая команда' }))
+    expect(await screen.findByText('CMD9')).toBeInTheDocument()
+    expect(screen.getByText('№ 3')).toBeInTheDocument()
+    expect(api.riscvCommandsFeedBatchList).toHaveBeenLastCalledWith({
+      session_id: '0f8fad5bd9cb469fa16570867728950e',
+      refresh: true,
+    })
+  })
+
+  it('открывает команду по id, которой нет в порции, прежней лентой', async () => {
+    vi.mocked(api.riscvCommandsFeedBatchList).mockResolvedValue({ data: batch(1, 1, [7]) } as never)
+    vi.mocked(api.riscvCommandsFeedList).mockResolvedValue({
+      data: {
+        id: 1,
+        mnemonic: 'ADD',
+        description: 'Складывает значения регистров.',
+        operand_count: 3,
+        length_bits: 32,
+        image_url: '',
+        video_url: '',
+        like_count: 2,
+        is_liked: 0,
+        next_id: 4,
+      },
+    } as never)
+    renderAt('/riscv_commands/feed?id=1')
+
+    expect(await screen.findByText('ADD')).toBeInTheDocument()
+    expect(api.riscvCommandsFeedList).toHaveBeenCalledWith({ id: 1 })
   })
 })

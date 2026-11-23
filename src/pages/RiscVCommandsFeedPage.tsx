@@ -1,14 +1,18 @@
-import { FC, useEffect } from 'react'
+import { FC, MouseEvent, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { RiscVCommandFeedView } from '../components/RiscVCommandFeedView'
 import { StatusMessage } from '../components/StatusMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAppDispatch, useAppSelector } from '../hooks/store'
+import { fetchFeedBatch } from '../slices/feedBatchSlice'
 import { fetchFeed, setLike } from '../slices/riscvCommandsSlice'
 import { ROUTES } from '../Routes'
 
-// Страница ленты: /riscv_commands/feed?id=<id>, без id открывается первая команда
+// Страница ленты: /riscv_commands/feed?id=<id>.
+// Команды берутся из порции в Redux (до 100 случайных команд сессии из Redis); «Следующий» идёт по ней
+// без запросов, а после последней команды загружается новая порция. Если порции нет
+// (backend недоступен) или id не входит в неё, работает прежняя лента по id с mock-данными гостя.
 export const RiscVCommandsFeedPage: FC = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -20,28 +24,56 @@ export const RiscVCommandsFeedPage: FC = () => {
   const { feed, feedLoading, feedError, likeError, likePending } = useAppSelector(
     (state) => state.riscvCommands,
   )
+  const batch = useAppSelector((state) => state.feedBatch)
   const isAuthenticated = useAppSelector((state) => state.user.isAuthenticated)
 
+  // Порция загружается при первом открытии ленты и перечитывается при входе и выходе
   useEffect(() => {
-    if (!isInvalidId) {
+    if (isInvalidId || batch.status === 'loading') return
+    if (batch.status === 'idle' || batch.forAuthenticated !== isAuthenticated) {
+      dispatch(fetchFeedBatch({ refresh: false, authenticated: isAuthenticated }))
+    }
+  }, [dispatch, isInvalidId, isAuthenticated, batch.status, batch.forAuthenticated])
+
+  const batchSettled = batch.status === 'ready' || batch.status === 'failed'
+  const batchIndex = id === null ? 0 : batch.items.findIndex((item) => item.riscv_command.id === id)
+  const batchItem = batch.status === 'ready' && batchIndex !== -1 ? batch.items[batchIndex] : null
+
+  useEffect(() => {
+    if (!isInvalidId && batchSettled && !batchItem) {
       dispatch(fetchFeed({ id }))
     }
-  }, [dispatch, id, isInvalidId, isAuthenticated])
+  }, [dispatch, id, isInvalidId, isAuthenticated, batchSettled, batchItem === null])
 
-  useDocumentTitle(feed ? `${feed.riscv_command.mnemonic} · RISC-V` : 'Лента · RISC-V')
+  const current = batchItem
+    ? { riscv_command: batchItem.riscv_command, is_liked: batchItem.is_liked }
+    : feed
+
+  useDocumentTitle(current ? `${current.riscv_command.mnemonic} · RISC-V` : 'Лента · RISC-V')
 
   const handleLike = () => {
-    if (!feed) return
+    if (!current) return
     if (!isAuthenticated) {
       navigate(ROUTES.LOGIN)
       return
     }
     dispatch(
       setLike({
-        id: feed.riscv_command.id,
-        like: feed.is_liked === 1 ? 0 : 1,
+        id: current.riscv_command.id,
+        like: current.is_liked === 1 ? 0 : 1,
       }),
     )
+  }
+
+  // После последней команды порции формируется следующая; номера в сессии продолжаются
+  const isLastInBatch = batchItem !== null && batchIndex === batch.items.length - 1
+  const handleNext = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!isLastInBatch) return
+    event.preventDefault()
+    dispatch(fetchFeedBatch({ refresh: true, authenticated: isAuthenticated }))
+      .unwrap()
+      .then(() => navigate(ROUTES.FEED))
+      .catch(() => undefined)
   }
 
   if (isInvalidId) {
@@ -55,7 +87,7 @@ export const RiscVCommandsFeedPage: FC = () => {
     )
   }
 
-  if (feedError && !feedLoading) {
+  if (!batchItem && feedError && !feedLoading && batchSettled) {
     return (
       <StatusMessage
         heading="Команда не найдена"
@@ -66,9 +98,13 @@ export const RiscVCommandsFeedPage: FC = () => {
     )
   }
 
+  const nextId = batchItem
+    ? batch.items[(batchIndex + 1) % batch.items.length].riscv_command.id
+    : (feed?.next_id ?? 0)
+
   return (
     <main className="page-view feed-page">
-      {feed && (
+      {current && batch.status !== 'loading' && (
         <>
           {likeError && (
             <p className="feed-error" role="alert">
@@ -76,13 +112,15 @@ export const RiscVCommandsFeedPage: FC = () => {
             </p>
           )}
           <RiscVCommandFeedView
-            key={feed.riscv_command.id}
-            riscvCommand={feed.riscv_command}
-            nextId={feed.next_id}
-            isLiked={feed.is_liked === 1}
+            key={current.riscv_command.id}
+            riscvCommand={current.riscv_command}
+            nextId={nextId}
+            isLiked={current.is_liked === 1}
             isAuthenticated={isAuthenticated}
             likePending={likePending}
             onLike={handleLike}
+            position={batchItem?.position}
+            onNext={batchItem ? handleNext : undefined}
           />
         </>
       )}

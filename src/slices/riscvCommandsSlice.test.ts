@@ -17,6 +17,7 @@ vi.mock('../api', () => ({
   api: {
     riscvCommandsList: vi.fn(),
     riscvCommandsFeedList: vi.fn(),
+    riscvCommandsFeedBatchList: vi.fn(),
     riscvCommandsDraftList: vi.fn(),
     riscvCommandsCreate: vi.fn(),
     riscvCommandsPublishUpdate: vi.fn(),
@@ -71,7 +72,9 @@ describe('слайс команд', () => {
   })
 
   it('загружает список через сгенерированный клиент', async () => {
-    vi.mocked(api.riscvCommandsList).mockResolvedValue({ data: [listCommand] } as never)
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({
+      data: { data: [listCommand], total: 1, page: 1, limit: 12 },
+    } as never)
     const store = createAppStore()
 
     await store.dispatch(fetchCommands()).unwrap()
@@ -79,9 +82,12 @@ describe('слайс команд', () => {
     expect(store.getState().riscvCommands.commands).toEqual([
       { ...listCommand, creator_login: undefined, status: undefined },
     ])
+    expect(store.getState().riscvCommands.total).toBe(1)
     expect(api.riscvCommandsList).toHaveBeenCalledWith({
       min_operands: 0,
       max_operands: 3,
+      page: 1,
+      limit: 12,
     })
   })
 
@@ -156,7 +162,9 @@ describe('слайс команд', () => {
   })
 
   it('удаляет команду из списка после успешного запроса', async () => {
-    vi.mocked(api.riscvCommandsList).mockResolvedValue({ data: [listCommand] } as never)
+    vi.mocked(api.riscvCommandsList).mockResolvedValue({
+      data: { data: [listCommand], total: 1, page: 1, limit: 12 },
+    } as never)
     vi.mocked(api.riscvCommandsDelete).mockResolvedValue({ data: undefined } as never)
     const store = createAppStore()
     authorize(store)

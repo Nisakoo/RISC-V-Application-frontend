@@ -10,7 +10,8 @@ import { useAppSelector } from './hooks/store'
 export const AppLayout: FC = () => {
   // Любой запрос к API команд, вход и выход блокируют интерфейс анимацией загрузки
   const isBusy = useAppSelector(
-    ({ riscvCommands, draft, user }) =>
+    ({ riscvCommands, draft, user, feedBatch }) =>
+      feedBatch.status === 'loading' ||
       riscvCommands.listLoading ||
       riscvCommands.feedLoading ||
       riscvCommands.likePending ||

@@ -56,6 +56,16 @@ export interface HandlerApiCommand {
   video_url?: string;
 }
 
+export interface HandlerApiCommandPage {
+  data?: HandlerApiListCommand[];
+  /** @example 12 */
+  limit?: number;
+  /** @example 1 */
+  page?: number;
+  /** @example 100006 */
+  total?: number;
+}
+
 export interface HandlerApiCredentials {
   /** @example "rv32_author" */
   login?: string;
@@ -66,6 +76,36 @@ export interface HandlerApiCredentials {
 export interface HandlerApiErrorResponse {
   /** @example "Команда RISC-V не найдена." */
   message?: string;
+}
+
+export interface HandlerApiFeedBatch {
+  /** @example 1 */
+  batch_number?: number;
+  /** @example 1 */
+  first_position?: number;
+  items?: HandlerApiFeedBatchItem[];
+  /** @example "0f8fad5bd9cb469fa16570867728950e" */
+  session_id?: string;
+}
+
+export interface HandlerApiFeedBatchItem {
+  created_at?: string;
+  creator_login?: string;
+  description?: string;
+  id?: number;
+  image_key?: string;
+  image_url?: string;
+  is_liked?: number;
+  length_bits?: number;
+  like_count?: number;
+  mnemonic?: string;
+  operand_count?: number;
+  /** @example 1 */
+  position?: number;
+  published_at?: string;
+  status?: DomainRiscVCommandStatus;
+  video_key?: string;
+  video_url?: string;
 }
 
 export interface HandlerApiFeedCommand {
@@ -312,11 +352,11 @@ export class Api<
 > extends HttpClient<SecurityDataType> {
   api = {
     /**
-     * @description Возвращает опубликованные команды с фильтрацией по количеству операндов. Доступен гостю; для аутентифицированного пользователя is_creator = 1 у его команд.
+     * @description Возвращает страницу опубликованных команд с фильтрацией по количеству операндов и общим количеством команд фильтра. Доступен гостю; для аутентифицированного пользователя is_creator = 1 у его команд.
      *
      * @tags riscv_commands
      * @name RiscvCommandsList
-     * @summary Список опубликованных команд RISC-V
+     * @summary Страница опубликованных команд RISC-V
      * @request GET:/api/riscv_commands
      * @secure
      */
@@ -334,10 +374,23 @@ export class Api<
          * @max 3
          */
         max_operands?: number;
+        /**
+         * Номер страницы
+         * @min 1
+         * @default 1
+         */
+        page?: number;
+        /**
+         * Размер страницы
+         * @min 1
+         * @max 100
+         * @default 12
+         */
+        limit?: number;
       },
       params: RequestParams = {},
     ) =>
-      this.request<HandlerApiListCommand[], HandlerApiErrorResponse>({
+      this.request<HandlerApiCommandPage, HandlerApiErrorResponse>({
         path: `/api/riscv_commands`,
         method: "GET",
         query: query,
@@ -426,6 +479,33 @@ export class Api<
     ) =>
       this.request<HandlerApiFeedCommand, HandlerApiErrorResponse>({
         path: `/api/riscv_commands/feed`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Возвращает до 100 случайных неповторяющихся опубликованных команд с порядковыми номерами в сессии. Без session_id создаётся новая сессия. refresh=true формирует следующую порцию после просмотра текущей; номера продолжаются. Порция хранится в Redis 30 минут. Доступна гостю; is_liked = 1, если аутентифицированный пользователь поставил лайк.
+     *
+     * @tags riscv_commands
+     * @name RiscvCommandsFeedBatchList
+     * @summary Порция ленты сессии из Redis
+     * @request GET:/api/riscv_commands/feed/batch
+     * @secure
+     */
+    riscvCommandsFeedBatchList: (
+      query?: {
+        /** Идентификатор сессии ленты из предыдущего ответа */
+        session_id?: string;
+        /** Сформировать новую порцию */
+        refresh?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HandlerApiFeedBatch, HandlerApiErrorResponse>({
+        path: `/api/riscv_commands/feed/batch`,
         method: "GET",
         query: query,
         secure: true,

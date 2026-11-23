@@ -3,21 +3,29 @@ import { useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 
 import { OperandRangeFilter } from '../components/OperandRangeFilter'
+import { Pagination } from '../components/Pagination'
 import { RiscVCommandCard } from '../components/RiscVCommandCard'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAppDispatch, useAppSelector } from '../hooks/store'
-import { OPERAND_COUNT_MAX, OPERAND_COUNT_MIN, parseOperandRange } from '../modules/riscvCommand'
+import {
+  OPERAND_COUNT_MAX,
+  OPERAND_COUNT_MIN,
+  PAGE_LIMIT,
+  parseOperandRange,
+  parsePage,
+} from '../modules/riscvCommand'
 import type { RootState } from '../store'
-import { deleteCommand, fetchCommands, setFilters } from '../slices/riscvCommandsSlice'
+import { deleteCommand, fetchCommands, setFilters, setPage } from '../slices/riscvCommandsSlice'
 
-// Страница плитки: /riscv_commands/grid?min_operands=<0–3>&max_operands=<0–3>
+// Страница плитки: /riscv_commands/grid?min_operands=<0–3>&max_operands=<0–3>&page=<n>
 export const RiscVCommandsGridPage: FC = () => {
   useDocumentTitle('Команды · RISC-V')
   const [searchParams, setSearchParams] = useSearchParams()
   const dispatch = useAppDispatch()
   const { min_operands, max_operands } = parseOperandRange(searchParams)
+  const page = parsePage(searchParams)
 
-  const { commands, listLoading, listError, deletingId } = useAppSelector(
+  const { commands, total, listLoading, listError, deletingId } = useAppSelector(
     (state) => state.riscvCommands,
   )
   const isAuthenticated = useAppSelector((state) => state.user.isAuthenticated)
@@ -50,8 +58,9 @@ export const RiscVCommandsGridPage: FC = () => {
       return
     }
     dispatch(setFilters({ min_operands, max_operands }))
+    dispatch(setPage(page))
     dispatch(fetchCommands())
-  }, [dispatch, min_operands, max_operands, isAuthenticated])
+  }, [dispatch, min_operands, max_operands, page, isAuthenticated])
 
   const handleFilterSubmit = (range: { min_operands: number; max_operands: number }) => {
     setSearchParams({
@@ -59,6 +68,17 @@ export const RiscVCommandsGridPage: FC = () => {
       max_operands: String(range.max_operands),
     })
   }
+
+  // Номер страницы хранится в URL вместе с фильтром
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('min_operands', String(min_operands))
+    next.set('max_operands', String(max_operands))
+    next.set('page', String(nextPage))
+    setSearchParams(next)
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT))
 
   const handleDelete = (id: number) => {
     dispatch(deleteCommand(id))
@@ -77,6 +97,11 @@ export const RiscVCommandsGridPage: FC = () => {
         {listError && (
           <p className="form-error" role="alert">
             {listError}
+          </p>
+        )}
+        {!listLoading && total > 0 && (
+          <p className="instruction-total">
+            Найдено команд: {total}. Страница {page} из {totalPages}.
           </p>
         )}
         {!listLoading && (
@@ -98,6 +123,9 @@ export const RiscVCommandsGridPage: FC = () => {
             )}
           </div>
         )}
+        <div className="d-flex justify-content-center">
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+        </div>
       </section>
     </main>
   )
