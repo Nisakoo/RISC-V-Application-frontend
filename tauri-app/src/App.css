@@ -1,0 +1,517 @@
+/* Визуальный стиль заимствован из RISC-V International (riscv.org) и совпадает с основным
+   веб-приложением проекта (frontend/src/styles/app.css): контрастные тёмные заголовки на светлом фоне,
+   жёлтый акцент #f3bf4f для кнопок, ползунков и плашек, карточная сетка с реакцией на наведение,
+   строгая рубленая типографика. Блоки фильтра, карточек и пагинации перенесены без изменений;
+   лента, добавление и вход в нативное приложение гостя не входят, поэтому их стилей здесь нет. */
+:root {
+  --app-max-width: 1100px;
+  --grid-columns: 3;
+  --grid-gap: 16px;
+  --color-text: #292a34;
+  --color-accent: #f3bf4f;
+  --color-accent-hover: #e5b44a;
+  --color-accent-text: #181818;
+  --color-title: #243164;
+  --color-muted: #9c9eac;
+  --color-disabled: #d3d4db;
+  --color-surface: #f3f3f4;
+  --color-page: #fafafa;
+  --color-focus: #3155c6;
+  color: var(--color-text);
+  background: var(--color-page);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--color-page);
+}
+
+body {
+  color: var(--color-text);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2 { line-height: 1.2; }
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Окно нативного приложения: страница на всю ширину окна Tauri, содержимое по центру */
+.phone { min-height: 100vh; background: var(--color-page); }
+
+.page-view { position: relative; }
+
+.page-content {
+  width: min(100%, var(--app-max-width));
+  margin: 0 auto;
+  padding: 28px 32px 36px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.page-content h1 {
+  margin: 0;
+  color: var(--color-title);
+  font-size: 31px;
+  font-weight: 750;
+}
+
+.form-error {
+  padding: 10px 12px;
+  margin: 0 0 14px;
+  border: 1px solid #d65757;
+  border-radius: 12px;
+  background: #fff0f0;
+  color: #8f2020;
+  font-size: 14px;
+}
+
+/* Фильтр и плитка инструкций */
+.operand-filter { margin: 8px 3px 18px; }
+
+.operand-filter__fields {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+/* Bootstrap делает legend плавающим и крупным: возвращаем вид подписи */
+.operand-filter .form-label {
+  display: block;
+  float: none;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.filter-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.range-control { min-width: 0; }
+
+.operand-range {
+  position: relative;
+  height: 27px;
+  margin: 4px 8px 0;
+}
+
+.operand-range__track {
+  position: absolute;
+  z-index: 0;
+  top: 12px;
+  right: 11px;
+  left: 11px;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #d8d9df 0 var(--range-start), var(--color-accent) var(--range-start) var(--range-end), #d8d9df var(--range-end) 100%);
+}
+
+/* Два ползунка Form.Range наложены друг на друга; собственную дорожку Bootstrap скрываем */
+.operand-range .form-range {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 27px;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  pointer-events: none;
+  background: transparent;
+}
+
+.operand-range .form-range--top { z-index: 4; }
+
+.operand-range .form-range:focus { box-shadow: none; }
+
+.operand-range .form-range::-webkit-slider-runnable-track {
+  height: 27px;
+  border: 0;
+  background: transparent;
+}
+
+.operand-range .form-range::-moz-range-track {
+  height: 27px;
+  border: 0;
+  background: transparent;
+}
+
+.operand-range .form-range::-webkit-slider-thumb {
+  width: 23px;
+  height: 23px;
+  margin-top: 2px;
+  appearance: none;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(32, 35, 63, .25);
+  pointer-events: auto;
+  background: var(--color-accent);
+  cursor: pointer;
+  transition: none;
+}
+
+.operand-range .form-range::-moz-range-thumb {
+  width: 23px;
+  height: 23px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(32, 35, 63, .25);
+  pointer-events: auto;
+  background: var(--color-accent);
+  cursor: pointer;
+  transition: none;
+}
+
+.operand-range .form-range:focus-visible { outline: 0; }
+
+.operand-range .form-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+.operand-range .form-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+.operand-range__dot {
+  position: absolute;
+  z-index: 1;
+  top: 7px;
+  width: 15px;
+  height: 15px;
+  transform: translateX(-50%);
+  border: 3px solid #f4f4f5;
+  border-radius: 50%;
+  background: #d8d9df;
+}
+
+.operand-range__dot.active { background: var(--color-accent); }
+.operand-range__dot--0 { left: 11px; }
+.operand-range__dot--1 { left: calc(33.333% + 3.667px); }
+.operand-range__dot--2 { left: calc(66.667% - 3.667px); }
+.operand-range__dot--3 { left: calc(100% - 11px); }
+
+.range-labels {
+  display: flex;
+  padding: 0 7px;
+  margin: 0 8px;
+  justify-content: space-between;
+  color: #454651;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Вариант кнопки Bootstrap в акцентном цвете макета */
+.btn-riscv {
+  --bs-btn-color: var(--color-accent-text);
+  --bs-btn-bg: var(--color-accent);
+  --bs-btn-border-color: var(--color-accent);
+  --bs-btn-hover-color: var(--color-accent-text);
+  --bs-btn-hover-bg: var(--color-accent-hover);
+  --bs-btn-hover-border-color: var(--color-accent-hover);
+  --bs-btn-active-color: var(--color-accent-text);
+  --bs-btn-active-bg: var(--color-accent-hover);
+  --bs-btn-active-border-color: var(--color-accent-hover);
+  --bs-btn-focus-shadow-rgb: 49, 85, 198;
+}
+
+.operand-filter__submit {
+  --bs-btn-padding-x: 12px;
+  --bs-btn-padding-y: 9px;
+  --bs-btn-font-size: 16px;
+  --bs-btn-font-weight: 700;
+  --bs-btn-line-height: 1.5;
+  --bs-btn-border-width: 0;
+  --bs-btn-border-radius: 10px;
+  margin-top: 4px;
+}
+
+.instruction-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+/* Карточка Card из React-Bootstrap без рамки и скругления, как в макете */
+.instruction-card {
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: var(--color-text);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.instruction-card:hover {
+  z-index: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(32, 35, 63, .12);
+}
+
+.instruction-card a { display: block; }
+
+.instruction-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / .9;
+  border-radius: 0;
+  /* Нейтральный фон, пока изображение загружается */
+  background: var(--color-surface);
+  object-fit: cover;
+}
+
+.instruction-card .card-body { padding: 14px; }
+
+.instruction-card .card-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.instruction-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.instruction-card__meta .badge {
+  padding: 6px 9px;
+  border-radius: 12px;
+  background: #f8d06b;
+  color: #584110;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.instruction-empty {
+  grid-column: 1 / -1;
+  padding: 36px 18px;
+  margin: 0;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.instruction-total {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+/* Пагинация плитки: активная страница в акцентном цвете, номера не переносятся */
+.riscv-pagination {
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 20px 0 0;
+  --bs-pagination-color: #243164;
+  --bs-pagination-active-bg: var(--color-accent);
+  --bs-pagination-active-border-color: var(--color-accent);
+  --bs-pagination-active-color: #243164;
+  --bs-pagination-focus-color: #243164;
+  --bs-pagination-hover-color: #243164;
+}
+
+/* Индикатор загрузки (Spinner из React-Bootstrap) в акцентном цвете */
+.loading-indicator {
+  display: grid;
+  padding: 36px 0;
+  place-items: center;
+  color: var(--color-accent);
+}
+
+.loading-indicator--overlay {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  padding: 0;
+  /* Оверлей перехватывает нажатия, поэтому кнопки и навигация блокируются на время запроса */
+  background: rgba(32, 35, 63, .25);
+  cursor: wait;
+}
+
+
+/* Панели фильтра и поиска по изображению */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  margin-bottom: 24px;
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(32, 35, 63, .08);
+}
+
+.panel .operand-filter { margin: 0; }
+
+/* Заголовок фильтра (legend) выглядит как заголовок панели поиска */
+.panel .operand-filter .form-label,
+.panel__title {
+  margin: 0;
+  color: var(--color-title);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.panel .operand-filter .form-label { margin-bottom: 12px; }
+
+.panel__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.panel .btn { --bs-btn-border-radius: 10px; font-weight: 700; }
+
+.panel__file {
+  display: flex;
+  min-width: 0;
+  gap: 12px;
+  align-items: center;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.panel__file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel__note { margin: 0; color: var(--color-muted); font-size: 13px; }
+
+.preview-image {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 2px solid #dee2e6;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-title);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.link-button:hover { text-decoration: underline; }
+
+.results-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.results-header h2 { margin: 0; color: var(--color-title); font-size: 16px; font-weight: 700; }
+.results-header__meta { color: var(--color-muted); font-size: 14px; }
+
+.similarity { margin-top: 6px; color: #2f7d4f; font-size: 13px; font-weight: 600; }
+
+.card-more {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--color-title);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Страница «Подробнее» */
+.detail-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
+
+.toolbar-button {
+  padding: 6px 14px;
+  border: 1px solid #d3d4db;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.toolbar-button:hover { background: var(--color-surface); }
+.toolbar-crumb { color: var(--color-muted); font-size: 14px; }
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 28px;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(32, 35, 63, .08);
+}
+
+.detail img { display: block; width: 100%; background: var(--color-surface); }
+
+.detail__head { display: flex; align-items: baseline; justify-content: space-between; }
+.detail h1 { margin: 0 0 12px; color: var(--color-title); }
+.detail__head span { color: var(--color-muted); }
+
+.detail-properties { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+
+.detail-properties > div { padding: 10px 14px; background: var(--color-surface); }
+.detail-properties dt { color: var(--color-muted); font-size: 13px; font-weight: 400; }
+.detail-properties dd { margin: 0; font-size: 20px; font-weight: 700; }
+
+.description-en { color: var(--color-muted); font-style: italic; }
+
+/* Адаптивность окна: 3 колонки карточек, 2 — до 900px, 1 — до 560px */
+@media (max-width: 900px) {
+  :root { --grid-columns: 2; }
+  .panels, .detail { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  :root { --grid-columns: 1; }
+  .page-content { padding: 20px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
