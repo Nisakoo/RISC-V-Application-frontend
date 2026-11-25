@@ -26,7 +26,6 @@ export function CommandListPage() {
     useCommandSearch(commands)
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT))
-  const bestScore = isSearching && items.length > 0 ? items[0].score : null
 
   // Страница загружается при смене фильтра, номера страницы или по кнопке «Обновить»
   useEffect(() => {
@@ -119,7 +118,6 @@ export function CommandListPage() {
                 </button>
               )}
             </div>
-            {bestScore !== null && <p className="panel__note">Лучший балл {bestScore.toFixed(3)}</p>}
           </section>
         </div>
 
@@ -142,7 +140,7 @@ export function CommandListPage() {
         {!loading && (
           <div className="instruction-grid">
             {items.map((command) => (
-              <CommandCard key={command.id} command={command} score={isSearching ? command.score : undefined} />
+              <CommandCard key={command.id} command={command} />
             ))}
             {!error && items.length === 0 && (
               <p className="instruction-empty">

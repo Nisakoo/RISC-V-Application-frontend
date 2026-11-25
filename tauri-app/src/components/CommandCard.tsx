@@ -6,8 +6,6 @@ import { Command, defaultImage, mediaUrl } from '../api'
 
 interface Props {
   command: Command
-  // Оценка сходства с загруженным изображением; показывается только при поиске
-  score?: number
 }
 
 // При недоступном объекте в MinIO подставляется изображение по умолчанию
@@ -17,7 +15,7 @@ export const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
 }
 
 // Карточка команды: изображение ведёт на страницу «Подробнее»
-export const CommandCard: FC<Props> = ({ command, score }) => (
+export const CommandCard: FC<Props> = ({ command }) => (
   <Card as="article" className="instruction-card">
     <Link to={`/commands/${command.id}`}>
       <Card.Img
@@ -34,7 +32,6 @@ export const CommandCard: FC<Props> = ({ command, score }) => (
         <span className="badge">{command.operand_count} · {command.length_bits} бит</span>
         <span aria-label={`${command.like_count} отметок нравится`}>♡ {command.like_count}</span>
       </div>
-      {score !== undefined && <div className="similarity">Сходство SigLIP · {score.toFixed(3)}</div>}
       <Link to={`/commands/${command.id}`} className="card-more">Подробнее →</Link>
     </Card.Body>
   </Card>
